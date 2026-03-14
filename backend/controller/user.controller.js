@@ -1,17 +1,31 @@
 const User = require('../model/user.model')
 
 exports.getUsersForSidebar = async (req,res)=>{
-    try{
+    try {
+        const loggedInUserId = req.user._id;
+        const searchTerm = req.query.search?.trim();
 
-        const loggedInUserId = req. User._id
-        const filterdUsers = await User.find({_id : {$ne : loggedInUserId}}).select("-password")
+        const query = {
+            _id: { $ne: loggedInUserId }
+        };
 
-         res.status(200).json(filterdUsers);
+        if (searchTerm && searchTerm.length > 0) {
+            query.$or = [
+                { username: { $regex: searchTerm, $options: 'i' } },
+                { fullname: { $regex: searchTerm, $options: 'i' } }
+            ];
+        }
+
+        const filterdUsers = await User.find(query).select("-password");
+
+        res.status(200).json({
+            success: true,
+            data: filterdUsers
+        });
 
     }catch (error) {
         console.log(error);
         res.status(500).json({
-            code: 500,
             success: false,
             message: "Server error"
         });

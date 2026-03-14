@@ -21,7 +21,6 @@ const  userSchema = new mongoose.Schema({
     },
     confirmpassword:{
         type:String,
-        require:true
     },
     gender:{
         type:String,
