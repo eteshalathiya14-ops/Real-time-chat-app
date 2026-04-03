@@ -63,16 +63,68 @@ const Chat = ({
           <div className="flex items-center justify-center h-full text-gray-400">
             No messages yet
           </div>
-        ) : (
-          messages.map((m) => (
-            <Message 
-              key={m._id} 
-              message={m} 
-              user={user}
-              selectedUser={selectedUser}
-            />
-          ))
-        )}
+        ) : (() => {
+          // Sort messages by createdAt asc (oldest first)
+          const sortedMessages = [...messages].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          
+          // Group by date
+          const groups = [];
+          let currentDate = null;
+          let currentGroup = [];
+
+          const getDateLabel = (dateStr) => {
+            const msgDate = new Date(dateStr);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            if (msgDate.toDateString() === today.toDateString()) {
+              return 'Today';
+            } else if (msgDate.toDateString() === yesterday.toDateString()) {
+              return 'Yesterday';
+            } else {
+              return msgDate.toLocaleDateString('en-IN', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+              });
+            }
+          };
+
+          sortedMessages.forEach((m) => {
+            const msgDate = new Date(m.createdAt).toDateString();
+            if (msgDate !== currentDate && currentGroup.length > 0) {
+              groups.push({ date: currentDate, messages: currentGroup });
+              currentGroup = [];
+            }
+            currentDate = msgDate;
+            currentGroup.push(m);
+          });
+          if (currentGroup.length > 0) {
+            groups.push({ date: currentDate, messages: currentGroup });
+          }
+
+          return groups.map((group, index) => (
+            <React.Fragment key={group.date || index}>
+              <div className="flex items-center my-4">
+                <div className="flex-1 h-px bg-gray-300"></div>
+                <span className="px-4 py-1 bg-white text-xs font-medium text-gray-500 uppercase tracking-wider mx-2">
+                  {getDateLabel(group.date)}
+                </span>
+                <div className="flex-1 h-px bg-gray-300"></div>
+              </div>
+              {group.messages.map((m) => (
+                <Message 
+                  key={m._id} 
+                  message={m} 
+                  user={user}
+                  selectedUser={selectedUser}
+                />
+              ))}
+            </React.Fragment>
+          ));
+        })()}
 
         <div ref={messagesEndRef}></div>
 
